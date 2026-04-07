@@ -1,0 +1,78 @@
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+    --c-bg: oklch(0.985 0.005 260);
+    --c-text: oklch(0.2 0.02 260);
+    --c-text2: oklch(0.5 0.02 260);
+    --c-accent: oklch(0.55 0.15 260);
+    --c-border: oklch(0.9 0.01 260);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --c-bg: oklch(0.13 0.02 260);
+        --c-text: oklch(0.92 0.01 260);
+        --c-text2: oklch(0.6 0.02 260);
+        --c-accent: oklch(0.7 0.13 260);
+        --c-border: oklch(0.25 0.02 260);
+    }
+}
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased }
+body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text);
+    line-height: 1.7;
+}
+
+article {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
+}
+
+.back {
+    display: inline-block;
+    font-size: 0.8125rem;
+    color: var(--c-accent);
+    text-decoration: none;
+    margin-bottom: 2rem;
+}
+.back:hover { text-decoration: underline }
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.updated {
+    font-size: 0.8125rem;
+    color: var(--c-text2);
+    margin-bottom: 2rem;
+}
+
+h2 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 1.75rem 0 0.5rem;
+}
+
+p {
+    font-size: 0.875rem;
+    color: var(--c-text2);
+    margin-bottom: 0.75rem;
+}
+
+ul {
+    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+li {
+    font-size: 0.875rem;
+    color: var(--c-text2);
+    margin-bottom: 0.375rem;
+}

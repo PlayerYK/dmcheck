@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">dmcheck - Domain Availability Checker</title>
+    <meta name="description" data-i18n-content="metaDescription" content="Free domain name availability checker. Enter a keyword, instantly check .com, .ai, .io and 1000+ TLDs via WHOIS &amp; RDAP. No signup required.">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="/style.css?v=18">
+</head>
+<body>
+    <main id="app" class="idle">
+        <header class="brand">
+            <span class="brand-name">dm<span class="brand-dot">check</span></span>
+            <div class="header-controls">
+                <select id="langSwitch" class="lang-switch">
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="es">Español</option>
+                </select>
+                <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+                    <svg class="theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <section class="hero">
+            <h1 data-i18n="heroTitle">Domain Availability Checker</h1>
+            <h2 data-i18n="heroSubtitle">One keyword. 1000+ TLDs. Instant answers.</h2>
+        </section>
+
+        <section class="search-section">
+            <form id="searchForm" autocomplete="off">
+                <div class="search-box">
+                    <div class="input-wrap">
+                        <input type="text" id="keyword" data-i18n-placeholder="searchPlaceholder" placeholder="Enter keyword to check domains" spellcheck="false" autofocus>
+                        <button type="button" id="clearBtn" class="clear-btn" hidden aria-label="Clear">&times;</button>
+                    </div>
+                    <button type="submit" id="searchBtn">
+                        <span class="btn-text" data-i18n="searchBtn">Search</span>
+                        <svg class="btn-spinner" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+                <button type="button" id="tldToggle" class="tld-toggle" data-i18n="tldToggle">TLD Settings</button>
+            </form>
+
+            <div id="tldEditor" class="tld-editor" hidden>
+                <textarea id="tldTextarea" spellcheck="false" rows="6"></textarea>
+                <div class="tld-footer">
+                    <span class="tld-hint" data-i18n="tldHint">One TLD per line. Leave empty to use defaults.</span>
+                    <span class="tld-footer-actions">
+                        <button type="button" id="tldReset" data-i18n="tldReset">Reset</button>
+                        <button type="button" id="tldSave" data-i18n="tldSave">Save</button>
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="results-section" hidden>
+            <p id="statsLine" class="stats-line"></p>
+            <div id="resultsList" class="results-list"></div>
+        </section>
+
+        <div id="loadingSection" class="loading-section" hidden>
+            <div class="loading-bar"><div class="loading-fill"></div></div>
+            <p class="loading-text" id="loadingText" data-i18n="loadingText">Checking domains...</p>
+        </div>
+
+        <div id="errorSection" class="error-section" hidden>
+            <p class="error-msg" id="errorMsg"></p>
+            <button type="button" id="errorDismiss" data-i18n="errorBack">Back</button>
+        </div>
+
+        <section class="faq-section">
+            <h2 class="faq-heading" data-i18n="faqHeading">FAQ</h2>
+            <details class="faq-item">
+                <summary data-i18n="faqWhat">What does this tool do?</summary>
+                <p data-i18n="faqWhatAnswer">Enter a keyword to check whether domains with multiple TLDs are available. Results are fetched in real time via WHOIS and RDAP protocols and streamed back one by one.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqFree">Is it free?</summary>
+                <p data-i18n="faqFreeAnswer">Completely free with no usage limits and no registration required.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqUnknown">Why do some domains show "Unknown"?</summary>
+                <p data-i18n="faqUnknownAnswer">Some registries' WHOIS servers may be slow or refuse connections. You can click the row to open the detail panel — the system will retry with a separate query and may get a result.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqAvailableReal">Does "Available" guarantee I can register it?</summary>
+                <p data-i18n="faqAvailableRealAnswer">Not necessarily. Results are based on WHOIS/RDAP data which may have slight delays. The domain could already be taken, reserved, or require special qualifications. Confirm with a registrar before purchasing.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqTLDs">Which TLDs are supported?</summary>
+                <p data-i18n="faqTLDsAnswer1">By default, 15 popular TLDs are checked. Click "TLD Settings" to customize — your list is saved in the browser.</p>
+                <p data-i18n="faqTLDsAnswer2">TLDs with direct WHOIS: com, net, org, biz, info, name, pro, mobi, app, dev, xyz, top, site, online, store, tech, cloud, blog, shop, club, live, space, fun, vip, work, ltd, group, world, link, life, icu, design, studio, global, digital, network, solutions, media, services, agency, run, ink, pub, wiki, plus, cool, zone, today, one, domains, fish, surf, town, now, io, ai, co, me, im, cc, tv, us, cn, uk, de, fr, jp, kr, au, ca, ru, in, nl, eu, it, se, ch, be, pl, nz, sg, hk, tw, is, sh</p>
+                <p data-i18n="faqTLDsAnswer3">TLDs not in the list above will be queried via RDAP protocol, which has broader coverage.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqSource">Where does the data come from?</summary>
+                <p data-i18n="faqSourceAnswer">Queries go directly to each registry's WHOIS server (port 43). Some TLDs use IANA's RDAP bootstrap service. No third-party middlemen, no scraping.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqCache">Are results cached?</summary>
+                <p data-i18n="faqCacheAnswer">Registered domain info is briefly cached to speed up repeat queries. Available status is not cached for long, ensuring you see fresh results.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqPrivacy">Do you log my queries?</summary>
+                <p data-i18n="faqPrivacyAnswer">We do not store query keywords linked to user identity. Server logs are used for troubleshooting only and are never used to analyze search intent or sold to third parties.</p>
+            </details>
+            <details class="faq-item">
+                <summary data-i18n="faqAPI">Do you offer an API?</summary>
+                <p data-i18n="faqAPIAnswer">No public API at the moment. If you have bulk query or integration needs, feel free to contact us.</p>
+            </details>
+        </section>
+
+        <footer class="footer">
+            <p class="footer-slogan" data-i18n="footerSlogan">Free domain availability checker powered by WHOIS & RDAP</p>
+            <p class="footer-links">
+                <a href="/tos.html" data-i18n="footerTos">Terms of Service</a>
+                <span class="footer-sep">&middot;</span>
+                <a href="/privacy.html" data-i18n="footerPrivacy">Privacy Policy</a>
+            </p>
+        </footer>
+    </main>
+
+    <div id="panelOverlay" class="panel-overlay" hidden></div>
+    <aside id="detailPanel" class="detail-panel">
+        <div class="panel-header">
+            <h2 id="panelTitle" class="panel-title"></h2>
+            <button type="button" id="panelClose" class="panel-close" aria-label="Close">&times;</button>
+        </div>
+        <div id="panelBody" class="panel-body"></div>
+    </aside>
+
+    <script src="/app.js?v=18"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[Unit]
+Description=dmcheck Service
+After=network.target
+
+[Service]
+Type=simple
+User=deployer
+WorkingDirectory=/opt/dmcheck
+ExecStart=/opt/dmcheck/dmcheck
+Restart=always
+RestartSec=5
+Environment=PORT=3300
+Environment=REDIS_ADDR=localhost:6379
+
+[Install]
+WantedBy=multi-user.target
