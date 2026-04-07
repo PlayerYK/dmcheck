@@ -162,6 +162,13 @@ Environment=CACHE_TTL=10m
 
 Then `sudo systemctl restart dmcheck`.
 
+## Acknowledgments
+
+- [IANA](https://data.iana.org/rdap/dns.json) — RDAP bootstrap data
+- [rdap.org](https://rdap.org) — RDAP query fallback
+- [screenshot.domains](https://screenshot.domains) — website screenshots
+- [favicon.im](https://favicon.im) — website favicons
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding translations, WHOIS servers, and submitting pull requests.

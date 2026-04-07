@@ -62,24 +62,22 @@ main {
     max-width: 720px;
     width: 100%;
     margin: 0 auto;
-    padding: clamp(1rem, 4vw, 2rem);
+    padding: 0.75rem clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem);
     display: flex;
     flex-direction: column;
 }
 
 /* Brand */
 .brand {
-    padding: clamp(1rem, 3vw, 2rem) 0 0.25rem;
+    padding: 0 0 0.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-.brand-name {
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    font-weight: 600;
-    letter-spacing: -0.03em;
+.brand-logo {
+    height: 1.75rem;
+    width: auto;
 }
-.brand-dot { color: var(--c-accent); font-weight: 400 }
 
 /* Hero */
 .hero {

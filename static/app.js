@@ -233,6 +233,8 @@
   function doSearch() {
     if (activeSource) { activeSource.close(); activeSource = null; }
 
+    if (!tldEditor.hidden) saveTldsAndClose();
+
     const raw = input.value;
     const keyword = raw.replace(/[\s\u3000]+/g, '');
     if (!keyword) return;
