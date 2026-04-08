@@ -9,13 +9,20 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    html:not([data-theme="light"]) {
         --c-bg: oklch(0.13 0.02 260);
         --c-text: oklch(0.92 0.01 260);
         --c-text2: oklch(0.6 0.02 260);
         --c-accent: oklch(0.7 0.13 260);
         --c-border: oklch(0.25 0.02 260);
     }
+}
+html[data-theme="dark"] {
+    --c-bg: oklch(0.13 0.02 260);
+    --c-text: oklch(0.92 0.01 260);
+    --c-text2: oklch(0.6 0.02 260);
+    --c-accent: oklch(0.7 0.13 260);
+    --c-border: oklch(0.25 0.02 260);
 }
 
 html { font-size: 16px; -webkit-font-smoothing: antialiased }
