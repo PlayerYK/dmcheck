@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -243,7 +244,11 @@ func setCache(ctx context.Context, rdb *redis.Client, domain string, result Doma
 	if err != nil {
 		return
 	}
-	if err := rdb.Set(ctx, "dq:"+domain, data, CacheTTL).Err(); err != nil {
+	ttl := CacheTTL
+	if result.Status == "registered" || result.Status == "reserved" {
+		ttl = 24 * time.Hour
+	}
+	if err := rdb.Set(ctx, "dq:"+domain, data, ttl).Err(); err != nil {
 		log.Printf("redis SET error for %s: %v", domain, err)
 	}
 }
