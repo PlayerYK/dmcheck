@@ -1,7 +1,7 @@
 {
   "pageTitle": "dmcheck - ドメイン検索",
   "metaDescription": "無料のドメイン空き状況チェッカー。キーワードを入力し、.com、.ai、.io など1000以上のTLDを WHOIS・RDAPで即時確認。登録不要。",
-  "heroTitle": "ドメイン空き状況チェッカー",
+  "heroTitle": "dmcheck — ドメイン空き状況チェッカー",
   "heroSubtitle": "キーワードひとつで、1000以上のTLDを即座にチェック",
   "searchPlaceholder": "キーワードを入力してドメインを検索",
   "clearLabel": "クリア",

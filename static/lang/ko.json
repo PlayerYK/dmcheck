@@ -1,7 +1,7 @@
 {
   "pageTitle": "dmcheck - 도메인 검색",
   "metaDescription": "무료 도메인 등록 가능 여부 확인 도구. 키워드를 입력하면 .com, .ai, .io 등 1000개 이상의 TLD를 WHOIS & RDAP로 즉시 확인. 가입 불필요.",
-  "heroTitle": "도메인 등록 가능 여부 확인",
+  "heroTitle": "dmcheck — 도메인 등록 가능 여부 확인",
   "heroSubtitle": "키워드 하나로 1000개 이상의 TLD를 즉시 확인",
   "searchPlaceholder": "키워드를 입력하여 도메인 검색",
   "clearLabel": "지우기",

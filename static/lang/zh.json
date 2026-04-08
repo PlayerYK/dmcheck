@@ -1,7 +1,7 @@
 {
   "pageTitle": "dmcheck - 域名查询",
   "metaDescription": "免费域名注册查询工具，输入关键词即可同时查询 .com、.ai、.io 等 1000 多个后缀的注册状态，基于 WHOIS 与 RDAP 协议，无需注册。",
-  "heroTitle": "域名注册查询",
+  "heroTitle": "dmcheck — 域名注册查询",
   "heroSubtitle": "一个关键词，1000+ 后缀，秒出结果",
   "searchPlaceholder": "输入关键词查询域名",
   "clearLabel": "清空",

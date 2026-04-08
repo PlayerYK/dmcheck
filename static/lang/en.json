@@ -1,7 +1,7 @@
 {
   "pageTitle": "dmcheck - Domain Availability Checker",
   "metaDescription": "Free domain name availability checker. Enter a keyword, instantly check .com, .ai, .io and 1000+ TLDs via WHOIS & RDAP. No signup required.",
-  "heroTitle": "Domain Availability Checker",
+  "heroTitle": "dmcheck — Domain Availability Checker",
   "heroSubtitle": "One keyword. 1000+ TLDs. Instant answers.",
   "searchPlaceholder": "Enter keyword to check domains",
   "clearLabel": "Clear",

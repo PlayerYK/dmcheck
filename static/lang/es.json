@@ -1,7 +1,7 @@
 {
   "pageTitle": "dmcheck - Consulta de Dominios",
   "metaDescription": "Herramienta gratuita para verificar la disponibilidad de dominios. Ingrese una palabra clave y consulte .com, .ai, .io y más de 1000 TLDs vía WHOIS y RDAP. Sin registro.",
-  "heroTitle": "Consulta de Disponibilidad de Dominios",
+  "heroTitle": "dmcheck — Consulta de Disponibilidad de Dominios",
   "heroSubtitle": "Una palabra clave. Más de 1000 TLDs. Al instante.",
   "searchPlaceholder": "Ingrese una palabra clave para buscar dominios",
   "clearLabel": "Borrar",

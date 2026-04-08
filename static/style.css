@@ -298,6 +298,15 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     color: var(--c-text2);
     margin-bottom: 0.75rem;
 }
+.stats-brand {
+    margin-right: 0.5em;
+}
+.stats-brand::after {
+    content: '—';
+    margin-left: 0.5em;
+    font-weight: 400;
+    color: var(--c-text2);
+}
 
 .results-list { display: flex; flex-direction: column }
 

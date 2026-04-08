@@ -321,7 +321,7 @@
     if (c.available) parts.push(T('statsAvailable').replace('{n}', c.available));
     if (c.registered) parts.push(T('statsRegistered').replace('{n}', c.registered));
     if (c.unknown) parts.push(T('statsUnknown').replace('{n}', c.unknown));
-    statsLine.textContent = parts.join(T('statsSep'));
+    statsLine.innerHTML = '<span class="stats-brand">dmcheck.app</span>' + esc(parts.join(T('statsSep')));
   }
 
   function isRecentDate(s) {

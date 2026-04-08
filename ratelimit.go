@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,10 +61,12 @@ func (rl *RateLimiter) cleanup() {
 
 func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := extractIP(r)
-		if !rl.getVisitor(ip).Allow() {
-			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
-			return
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			ip := extractIP(r)
+			if !rl.getVisitor(ip).Allow() {
+				http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
