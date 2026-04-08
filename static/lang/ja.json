@@ -19,6 +19,7 @@
   "panelLoading": "読み込み中...",
   "panelLoadFail": "詳細の読み込みに失敗しました",
   "panelAvailable": "このドメインは登録可能です",
+  "panelReserved": "このドメインはレジストリにより予約されており、通常の方法では登録できません",
   "panelUnknown": "ドメインの状態を確認できません。WHOIS/RDAPクエリが有効なデータを返しませんでした。",
   "statsTotal": "合計 {n} 件",
   "statsAvailable": "登録可能 {n}",
@@ -26,6 +27,7 @@
   "statsUnknown": "不明 {n}",
   "statsSep": "、",
   "tagAvailable": "登録可能",
+  "tagReserved": "予約済み",
   "tagUnknown": "不明",
   "copyBtn": "コピー",
   "copiedBtn": "コピー済",
@@ -78,5 +80,10 @@
   "statusPendingDelete": "削除保留中",
   "statusPendingTransfer": "移管処理中",
   "statusOk": "正常",
-  "statusActive": "正常"
+  "statusActive": "正常",
+  "dateToday": "今日",
+  "dateYesterday": "昨日",
+  "dateDaysAgo": "{n}日前",
+  "dateLastWeek": "先週",
+  "dateWeeksAgo": "{n}週間前"
 }

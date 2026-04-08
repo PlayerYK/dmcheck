@@ -19,6 +19,7 @@
   "panelLoading": "Cargando...",
   "panelLoadFail": "Error al cargar detalles",
   "panelAvailable": "Este dominio está disponible para registro",
+  "panelReserved": "Este dominio está reservado por el registro y no se puede registrar por canales normales.",
   "panelUnknown": "No se puede determinar el estado del dominio. Las consultas WHOIS/RDAP no devolvieron datos válidos.",
   "statsTotal": "Total {n}",
   "statsAvailable": "Disponibles {n}",
@@ -26,6 +27,7 @@
   "statsUnknown": "Desconocidos {n}",
   "statsSep": ", ",
   "tagAvailable": "Disponible",
+  "tagReserved": "Reservado",
   "tagUnknown": "Desconocido",
   "copyBtn": "Copiar",
   "copiedBtn": "Copiado",
@@ -78,5 +80,10 @@
   "statusPendingDelete": "Pendiente de eliminación",
   "statusPendingTransfer": "Transferencia en proceso",
   "statusOk": "Activo",
-  "statusActive": "Activo"
+  "statusActive": "Activo",
+  "dateToday": "Hoy",
+  "dateYesterday": "Ayer",
+  "dateDaysAgo": "Hace {n} días",
+  "dateLastWeek": "La semana pasada",
+  "dateWeeksAgo": "Hace {n} semanas"
 }

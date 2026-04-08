@@ -14,6 +14,13 @@
     --c-accent: oklch(0.55 0.18 245);
     --c-accent-soft: oklch(0.95 0.04 245);
     --c-green-soft: oklch(0.72 0.19 155 / 0.1);
+    --tag-avail-fg: oklch(0.3 0.08 155);
+    --tag-avail-bg: oklch(0.92 0.08 155);
+    --c-recent-bg: oklch(0.97 0.03 80);
+    --c-recent-dot: oklch(0.65 0.18 80);
+    --c-orange: oklch(0.7 0.16 55);
+    --tag-reserved-fg: oklch(0.35 0.08 55);
+    --tag-reserved-bg: oklch(0.93 0.06 55);
     --panel-w: 520px;
     --radius: 6px;
 }
@@ -31,6 +38,13 @@
         --c-accent: oklch(0.7 0.15 245);
         --c-accent-soft: oklch(0.22 0.04 245);
         --c-green-soft: oklch(0.78 0.18 155 / 0.12);
+        --tag-avail-fg: oklch(0.88 0.12 155);
+        --tag-avail-bg: oklch(0.25 0.05 155);
+        --c-recent-bg: oklch(0.22 0.03 80);
+        --c-recent-dot: oklch(0.75 0.15 80);
+        --c-orange: oklch(0.78 0.14 55);
+        --tag-reserved-fg: oklch(0.85 0.1 55);
+        --tag-reserved-bg: oklch(0.25 0.05 55);
     }
 }
 html[data-theme="dark"] {
@@ -41,6 +55,13 @@ html[data-theme="dark"] {
     --c-surface: oklch(0.18 0.02 260);
     --c-text: oklch(0.92 0.01 260);
     --c-text2: oklch(0.6 0.02 260);
+    --tag-avail-fg: oklch(0.88 0.12 155);
+    --tag-avail-bg: oklch(0.25 0.05 155);
+    --c-recent-bg: oklch(0.22 0.03 80);
+    --c-recent-dot: oklch(0.75 0.15 80);
+    --c-orange: oklch(0.78 0.14 55);
+    --tag-reserved-fg: oklch(0.85 0.1 55);
+    --tag-reserved-bg: oklch(0.25 0.05 55);
     --c-border: oklch(0.25 0.02 260);
     --c-accent: oklch(0.7 0.15 245);
     --c-accent-soft: oklch(0.22 0.04 245);
@@ -280,14 +301,23 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 
 .results-list { display: flex; flex-direction: column }
 
+.result-group-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--c-text2);
+    padding: 0.75rem 0.75rem 0.3rem;
+    letter-spacing: 0.03em;
+}
+.result-group-label:first-child { padding-top: 0.25rem }
+
 .result-item { border-bottom: 1px solid var(--c-border) }
 .result-item:last-child { border-bottom: none }
 
 .result-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.625rem;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
     border-radius: var(--radius);
     transition: background 0.12s;
 }
@@ -297,34 +327,70 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 
 .result-domain {
     font-family: var(--font-mono);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     white-space: nowrap;
 }
-.result-domain.available { color: var(--c-green) }
-.result-domain.registered { color: var(--c-red) }
-.result-domain.unknown { color: var(--c-gray) }
+
+/* Available: most prominent */
+.result-row.row-available {
+    background: var(--c-green-soft);
+}
+.result-row.row-available .result-domain { color: var(--c-green); font-weight: 600 }
+
+/* Recent: warm highlight */
+.result-row.row-recent .result-domain { color: var(--c-text) }
+.result-row.row-recent::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--c-recent-dot);
+    flex-shrink: 0;
+}
+
+/* Old registered: subdued */
+.result-row.row-registered .result-domain { color: var(--c-text2) }
+
+/* Reserved: amber accent */
+.result-row.row-reserved .result-domain { color: var(--c-text2) }
+
+/* Unknown: most subdued */
+.result-row.row-unknown .result-domain { color: var(--c-gray) }
 
 .result-meta {
+    margin-left: auto;
+    font-family: var(--font-mono);
     font-size: 0.8125rem;
     color: var(--c-text2);
     white-space: nowrap;
 }
+.result-row.row-recent .result-meta {
+    color: var(--c-recent-dot);
+    font-weight: 500;
+}
 
 .result-tag {
-    font-size: 0.75rem;
-    padding: 0.125rem 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.15rem 0.45rem;
     border-radius: 3px;
     white-space: nowrap;
+    letter-spacing: 0.02em;
 }
 .result-tag.available {
-    color: var(--c-green);
-    background: var(--c-green-soft);
+    color: var(--tag-avail-fg);
+    background: var(--tag-avail-bg);
+}
+.result-tag.reserved {
+    color: var(--tag-reserved-fg);
+    background: var(--tag-reserved-bg);
 }
 
 .copy-btn {
+    margin-left: auto;
     font: inherit;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--c-text2);
     background: none;
     border: 1px solid var(--c-border);

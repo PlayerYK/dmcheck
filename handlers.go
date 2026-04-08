@@ -154,16 +154,12 @@ func handleSearchSSE(w http.ResponseWriter, r *http.Request, rdb *redis.Client, 
 		sendEvent(result)
 	} else {
 		ch := make(chan DomainResult, len(tlds))
-		sem := make(chan struct{}, 30)
 		var wg sync.WaitGroup
 
 		for _, tld := range tlds {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				sem <- struct{}{}
-				defer func() { <-sem }()
-
 				domain := keyword + "." + t
 				if cached, ok := getCache(r.Context(), rdb, domain); ok {
 					ch <- cached
@@ -234,10 +230,16 @@ func getCache(ctx context.Context, rdb *redis.Client, domain string) (DomainResu
 }
 
 func setCache(ctx context.Context, rdb *redis.Client, domain string, result DomainResult) {
-	if rdb == nil {
+	if rdb == nil || result.Status == "unknown" {
 		return
 	}
-	data, err := json.Marshal(result)
+	lite := DomainResult{
+		Domain:     result.Domain,
+		Status:     result.Status,
+		Registered: result.Registered,
+		Expires:    result.Expires,
+	}
+	data, err := json.Marshal(lite)
 	if err != nil {
 		return
 	}

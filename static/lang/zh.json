@@ -19,6 +19,7 @@
   "panelLoading": "加载中...",
   "panelLoadFail": "加载详情失败",
   "panelAvailable": "该域名可以注册",
+  "panelReserved": "该域名由注册局保留，无法通过常规渠道注册",
   "panelUnknown": "无法确定该域名状态，WHOIS/RDAP 查询均未返回有效数据",
   "statsTotal": "共 {n} 个",
   "statsAvailable": "可注册 {n}",
@@ -26,6 +27,7 @@
   "statsUnknown": "未知 {n}",
   "statsSep": "，",
   "tagAvailable": "可注册",
+  "tagReserved": "保留",
   "tagUnknown": "未知",
   "copyBtn": "复制",
   "copiedBtn": "已复制",
@@ -78,5 +80,10 @@
   "statusPendingDelete": "待删除",
   "statusPendingTransfer": "转移中",
   "statusOk": "正常",
-  "statusActive": "正常"
+  "statusActive": "正常",
+  "dateToday": "今天",
+  "dateYesterday": "昨天",
+  "dateDaysAgo": "{n} 天前",
+  "dateLastWeek": "上周",
+  "dateWeeksAgo": "{n} 周前"
 }

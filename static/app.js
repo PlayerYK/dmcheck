@@ -245,13 +245,21 @@
     closePanel();
     setState('streaming');
 
-    const hasTLD = keyword.includes('.') && /^[a-zA-Z]+$/.test(keyword.split('.').pop());
-    let url = '/api/search?keyword=' + encodeURIComponent(keyword) + '&stream=true';
-    if (!hasTLD) {
-      url += '&tlds=' + encodeURIComponent(tlds.join(','));
+    var searchKeyword = keyword;
+    var searchTlds = tlds.slice();
+    var dotIdx = keyword.lastIndexOf('.');
+    if (dotIdx > 0 && /^[a-zA-Z]{2,}$/.test(keyword.substring(dotIdx + 1))) {
+      searchKeyword = keyword.substring(0, dotIdx);
+      var extraTld = keyword.substring(dotIdx + 1).toLowerCase();
+      if (searchTlds.indexOf(extraTld) < 0) {
+        searchTlds.unshift(extraTld);
+      }
     }
 
-    const totalExpected = hasTLD ? 1 : tlds.length;
+    let url = '/api/search?keyword=' + encodeURIComponent(searchKeyword) + '&stream=true';
+    url += '&tlds=' + encodeURIComponent(searchTlds.join(','));
+
+    const totalExpected = searchTlds.length;
     let received = 0;
 
     const source = new EventSource(url);
@@ -273,7 +281,10 @@
     source.addEventListener('done', () => {
       source.close();
       activeSource = null;
+      renderResults();
+      updateStats();
       setState('results');
+      retryUnknowns();
     });
 
     source.addEventListener('error', () => {
@@ -313,7 +324,15 @@
     statsLine.textContent = parts.join(T('statsSep'));
   }
 
-  function appendRow(r) {
+  function isRecentDate(s) {
+    if (!s) return false;
+    var d = parseDate(s);
+    if (!d) return false;
+    var diff = Math.floor((new Date() - d) / 86400000);
+    return diff >= 0 && diff <= 30;
+  }
+
+  function buildRow(r) {
     const item = document.createElement('div');
     item.className = 'result-item';
 
@@ -321,11 +340,13 @@
     row.className = 'result-row';
 
     const domain = document.createElement('span');
-    domain.className = 'result-domain ' + r.status;
+    domain.className = 'result-domain';
     domain.textContent = r.domain;
     row.appendChild(domain);
 
     if (r.status === 'available') {
+      row.classList.add('row-available');
+
       const tag = document.createElement('span');
       tag.className = 'result-tag available';
       tag.textContent = T('tagAvailable');
@@ -340,17 +361,34 @@
       });
       row.appendChild(copyBtn);
     } else if (r.status === 'registered') {
+      var recent = isRecentDate(r.registered);
+      row.classList.add(recent ? 'row-recent' : 'row-registered');
+
       const meta = document.createElement('span');
       meta.className = 'result-meta';
-      const parts = [];
-      if (r.registered) parts.push(shortDate(r.registered));
-      if (r.expires) parts.push(shortDate(r.expires));
-      meta.textContent = parts.length === 2 ? parts[0] + ' ~ ' + parts[1] : parts[0] || '';
+      if (r.registered && r.expires) {
+        meta.textContent = shortDate(r.registered) + ' ~ ' + shortDate(r.expires);
+      } else if (r.registered) {
+        meta.textContent = shortDate(r.registered);
+      } else if (r.expires) {
+        meta.textContent = T('labelExpires') + ' ' + shortDate(r.expires);
+      }
       row.appendChild(meta);
 
       row.classList.add('clickable');
       row.addEventListener('click', () => openPanel(r.domain, row));
+    } else if (r.status === 'reserved') {
+      row.classList.add('row-reserved');
+
+      const tag = document.createElement('span');
+      tag.className = 'result-tag reserved';
+      tag.textContent = T('tagReserved');
+      row.appendChild(tag);
+
+      row.classList.add('clickable');
+      row.addEventListener('click', () => openPanel(r.domain, row));
     } else {
+      row.classList.add('row-unknown');
       const meta = document.createElement('span');
       meta.className = 'result-meta';
       meta.textContent = T('tagUnknown');
@@ -361,7 +399,44 @@
     }
 
     item.appendChild(row);
-    resultsList.appendChild(item);
+    return item;
+  }
+
+  function renderResults() {
+    resultsList.innerHTML = '';
+    var available = [], recent = [], registered = [], reserved = [], unknown = [];
+    allResults.forEach(function(r) {
+      if (r.status === 'available') available.push(r);
+      else if (r.status === 'registered' && isRecentDate(r.registered)) recent.push(r);
+      else if (r.status === 'registered') registered.push(r);
+      else if (r.status === 'reserved') reserved.push(r);
+      else unknown.push(r);
+    });
+    [available, recent, registered, reserved, unknown].forEach(function(group) {
+      group.forEach(function(r) { resultsList.appendChild(buildRow(r)); });
+    });
+  }
+
+  function retryUnknowns() {
+    var unknowns = allResults.filter(function(r) { return r.status === 'unknown'; });
+    if (!unknowns.length) return;
+    unknowns.forEach(function(r) {
+      fetch('/api/whois/' + encodeURIComponent(r.domain))
+        .then(function(res) { if (!res.ok) throw new Error(); return res.json(); })
+        .then(function(data) {
+          if (data.status === 'unknown') return;
+          var idx = allResults.findIndex(function(x) { return x.domain === r.domain; });
+          if (idx === -1) return;
+          allResults[idx] = data;
+          renderResults();
+          updateStats();
+        })
+        .catch(function() {});
+    });
+  }
+
+  function appendRow(r) {
+    resultsList.appendChild(buildRow(r));
   }
 
   function copyDomain(domain, btn) {
@@ -421,6 +496,16 @@
 
     if (data.status === 'available') {
       html += '<p class="panel-status-hint" style="color:var(--c-green)">' + esc(T('panelAvailable')) + '</p>';
+      panelBody.innerHTML = html;
+      return;
+    }
+
+    if (data.status === 'reserved') {
+      html += '<p class="panel-status-hint" style="color:var(--c-orange)">' + esc(T('panelReserved')) + '</p>';
+      if (data.raw_whois) {
+        html += '<p class="panel-section-title">' + esc(T('sectionRawWhois')) + '</p>' +
+          '<pre class="raw-whois-pre">' + esc(data.raw_whois) + '</pre>';
+      }
       panelBody.innerHTML = html;
       return;
     }
@@ -489,14 +574,33 @@
       (desc ? '<span class="status-code-desc">' + desc + '</span>' : '') + '</div>';
   }
 
+  function parseDate(s) {
+    if (!s) return null;
+    var d = new Date(s);
+    return isNaN(d) ? null : d;
+  }
+
   function shortDate(s) {
     if (!s) return '';
-    return s.substring(0, 7);
+    var date = parseDate(s);
+    if (!date) return s.substring(0, 7);
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    var diff = Math.floor((today - target) / 86400000);
+    if (diff === 0) return T('dateToday');
+    if (diff === 1) return T('dateYesterday');
+    if (diff >= 2 && diff <= 6) return T('dateDaysAgo').replace('{n}', diff);
+    if (diff >= 7 && diff <= 13) return T('dateLastWeek');
+    if (diff >= 14 && diff <= 30) return T('dateWeeksAgo').replace('{n}', Math.floor(diff / 7));
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
   }
 
   function formatDate(s) {
     if (!s) return '-';
-    return s.substring(0, 10);
+    var d = parseDate(s);
+    if (!d) return s.substring(0, 10);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
   function esc(s) {

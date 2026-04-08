@@ -19,6 +19,7 @@
   "panelLoading": "Loading...",
   "panelLoadFail": "Failed to load details",
   "panelAvailable": "This domain is available for registration",
+  "panelReserved": "This domain is reserved by the registry and cannot be registered through normal channels.",
   "panelUnknown": "Unable to determine domain status. WHOIS/RDAP queries returned no valid data.",
   "statsTotal": "Total {n}",
   "statsAvailable": "Available {n}",
@@ -26,6 +27,7 @@
   "statsUnknown": "Unknown {n}",
   "statsSep": ", ",
   "tagAvailable": "Available",
+  "tagReserved": "Reserved",
   "tagUnknown": "Unknown",
   "copyBtn": "Copy",
   "copiedBtn": "Copied",
@@ -78,5 +80,10 @@
   "statusPendingDelete": "Pending delete",
   "statusPendingTransfer": "Pending transfer",
   "statusOk": "Active",
-  "statusActive": "Active"
+  "statusActive": "Active",
+  "dateToday": "Today",
+  "dateYesterday": "Yesterday",
+  "dateDaysAgo": "{n} days ago",
+  "dateLastWeek": "Last week",
+  "dateWeeksAgo": "{n} weeks ago"
 }

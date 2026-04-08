@@ -67,6 +67,9 @@ func whoisQuery(domain, server string, timeout time.Duration) (string, error) {
 
 func isWhoisJunk(raw string) bool {
 	lower := strings.ToLower(raw)
+	if strings.Contains(lower, "domain name:") || strings.Contains(lower, "creation date:") {
+		return false
+	}
 	for _, phrase := range whoisJunkPhrases {
 		if strings.Contains(lower, phrase) {
 			return true
@@ -88,40 +91,48 @@ func parseWhoisRaw(domain, raw string) (DomainResult, string) {
 
 	lower := strings.ToLower(raw)
 
-	for _, phrase := range availablePhrases {
-		if strings.Contains(lower, phrase) {
-			result.Status = "available"
-			return result, ""
+	hasReserved := strings.Contains(lower, "reserved")
+	if !hasReserved {
+		for _, phrase := range availablePhrases {
+			if strings.Contains(lower, phrase) {
+				result.Status = "available"
+				return result, ""
+			}
 		}
 	}
 
 	result.Status = "registered"
 	var nameservers []string
 	var referralServer string
+	hasDomainFields := false
 
 	for _, line := range strings.Split(raw, "\n") {
 		trimmed := strings.TrimSpace(line)
 		ll := strings.ToLower(trimmed)
 
 		switch {
+		case containsAny(ll, "domain name:"):
+			hasDomainFields = true
 		case containsAny(ll, "creation date:", "registration time:", "created:"):
+			hasDomainFields = true
 			if result.Registered == "" {
-				result.Registered = extractValue(trimmed)
+				result.Registered = normalizeDate(extractValue(trimmed))
 			}
 		case containsAny(ll, "registry expiry date:", "expiration date:", "expire date:", "expiry date:", "paid-till:"):
+			hasDomainFields = true
 			val := extractValue(trimmed)
-			if len(val) >= 10 {
-				if val[0] >= '0' && val[0] <= '9' {
-					result.Expires = val
-				}
+			if len(val) >= 8 {
+				result.Expires = normalizeDate(val)
 			}
 		case containsAny(ll, "updated date:", "last updated:"):
 			if result.Updated == "" {
-				result.Updated = extractValue(trimmed)
+				result.Updated = normalizeDate(extractValue(trimmed))
 			}
 		case strings.Contains(ll, "registrar:") && result.Registrar == "":
+			hasDomainFields = true
 			result.Registrar = extractValue(trimmed)
 		case strings.Contains(ll, "domain status:"):
+			hasDomainFields = true
 			result.DomainStatus = append(result.DomainStatus, extractValue(trimmed))
 		case containsAny(ll, "name server:", "nserver:"):
 			ns := extractValue(trimmed)
@@ -133,6 +144,10 @@ func parseWhoisRaw(domain, raw string) (DomainResult, string) {
 				referralServer = strings.ToLower(extractValue(trimmed))
 			}
 		}
+	}
+
+	if hasReserved && !hasDomainFields {
+		result.Status = "reserved"
 	}
 
 	if len(nameservers) > 0 {
@@ -170,7 +185,34 @@ type rdapNS struct {
 var (
 	rdapBootstrap     map[string]string
 	rdapBootstrapOnce sync.Once
+	rdapSem           = make(chan struct{}, 5)
+
+	whoisServerMu    sync.Mutex
+	whoisServerLocks = make(map[string]*sync.Mutex)
+	whoisPacerMu     sync.Mutex
+	whoisLastQuery   time.Time
 )
+
+func getWhoisLock(server string) *sync.Mutex {
+	whoisServerMu.Lock()
+	defer whoisServerMu.Unlock()
+	if m, ok := whoisServerLocks[server]; ok {
+		return m
+	}
+	m := &sync.Mutex{}
+	whoisServerLocks[server] = m
+	return m
+}
+
+func whoisPace() {
+	whoisPacerMu.Lock()
+	defer whoisPacerMu.Unlock()
+	since := time.Since(whoisLastQuery)
+	if since < 100*time.Millisecond {
+		time.Sleep(100*time.Millisecond - since)
+	}
+	whoisLastQuery = time.Now()
+}
 
 func loadRDAPBootstrap() {
 	rdapBootstrap = make(map[string]string)
@@ -203,19 +245,22 @@ func loadRDAPBootstrap() {
 	}
 }
 
-func getRDAPURL(domain string) string {
+func getRDAPURL(domain string) (string, bool) {
 	rdapBootstrapOnce.Do(loadRDAPBootstrap)
 	tld := domain[strings.LastIndex(domain, ".")+1:]
 	if base, ok := rdapBootstrap[strings.ToLower(tld)]; ok {
-		return base + "domain/" + domain
+		return base + "domain/" + domain, true
 	}
-	return "https://rdap.org/domain/" + domain
+	return "https://rdap.org/domain/" + domain, false
 }
 
 func rdapQuery(domain string, timeout time.Duration) (DomainResult, error) {
 	result := DomainResult{Domain: domain, Status: "unknown"}
 
-	rdapURL := getRDAPURL(domain)
+	rdapSem <- struct{}{}
+	defer func() { <-rdapSem }()
+
+	rdapURL, fromBootstrap := getRDAPURL(domain)
 	client := &http.Client{Timeout: timeout}
 	req, err := http.NewRequest("GET", rdapURL, nil)
 	if err != nil {
@@ -230,7 +275,9 @@ func rdapQuery(domain string, timeout time.Duration) (DomainResult, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		result.Status = "available"
+		if fromBootstrap {
+			result.Status = "available"
+		}
 		return result, nil
 	}
 	if resp.StatusCode != 200 {
@@ -248,15 +295,21 @@ func rdapQuery(domain string, timeout time.Duration) (DomainResult, error) {
 	}
 
 	result.Status = "registered"
+	for _, s := range data.Status {
+		if strings.Contains(strings.ToLower(s), "reserved") {
+			result.Status = "reserved"
+			break
+		}
+	}
 
 	for _, event := range data.Events {
 		switch event.EventAction {
 		case "registration":
-			result.Registered = event.EventDate
+			result.Registered = normalizeDate(event.EventDate)
 		case "expiration":
-			result.Expires = event.EventDate
+			result.Expires = normalizeDate(event.EventDate)
 		case "last changed":
-			result.Updated = event.EventDate
+			result.Updated = normalizeDate(event.EventDate)
 		}
 	}
 
@@ -316,7 +369,16 @@ func CheckDomain(domain string) DomainResult {
 	whoisOK := false
 
 	if ok {
-		raw, err := whoisQuery(domain, server, 5*time.Second)
+		srvMu := getWhoisLock(server)
+		srvMu.Lock()
+		whoisPace()
+		raw, err := whoisQuery(domain, server, 15*time.Second)
+		if err == nil && strings.TrimSpace(raw) == "" {
+			time.Sleep(500 * time.Millisecond)
+			raw, err = whoisQuery(domain, server, 15*time.Second)
+		}
+		srvMu.Unlock()
+
 		if err == nil && raw != "" {
 			var referral string
 			result, referral = parseWhoisRaw(domain, raw)
@@ -324,11 +386,15 @@ func CheckDomain(domain string) DomainResult {
 				whoisOK = true
 				result.RawWhois = raw
 			}
-			if result.Status == "available" {
+			if result.Status == "available" || result.Status == "reserved" {
 				return result
 			}
 			if whoisOK && referral != "" && referral != server {
-				refRaw, refErr := whoisQuery(domain, referral, 5*time.Second)
+				refMu := getWhoisLock(referral)
+				refMu.Lock()
+				whoisPace()
+				refRaw, refErr := whoisQuery(domain, referral, 15*time.Second)
+				refMu.Unlock()
 				if refErr == nil && refRaw != "" {
 					refResult, _ := parseWhoisRaw(domain, refRaw)
 					mergeWhoisResults(&result, &refResult)
@@ -339,7 +405,7 @@ func CheckDomain(domain string) DomainResult {
 	}
 
 	if !whoisOK || result.missingInfo() {
-		rdapResult, err := rdapQuery(domain, 8*time.Second)
+		rdapResult, err := rdapQuery(domain, 15*time.Second)
 		if err == nil {
 			if !whoisOK {
 				return rdapResult
@@ -384,9 +450,8 @@ func SearchDomains(keyword string, tlds []string) []DomainResult {
 	}
 
 	var (
-		wg  sync.WaitGroup
-		mu  sync.Mutex
-		sem = make(chan struct{}, 30)
+		wg sync.WaitGroup
+		mu sync.Mutex
 	)
 	collected := make([]indexed, 0, len(tlds))
 
@@ -394,9 +459,6 @@ func SearchDomains(keyword string, tlds []string) []DomainResult {
 		wg.Add(1)
 		go func(idx int, t string) {
 			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
 			domain := keyword + "." + t
 			r := CheckDomain(domain)
 			mu.Lock()
@@ -432,4 +494,31 @@ func extractValue(line string) string {
 		return ""
 	}
 	return strings.TrimSpace(line[idx+1:])
+}
+
+func normalizeDate(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+		"02/01/2006 15:04:05",
+		"02/01/2006",
+		"01/02/2006",
+		"20060102",
+		"2006.01.02",
+		"02-Jan-2006",
+		"January 02 2006",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t.UTC().Format(time.RFC3339)
+		}
+	}
+	return s
 }
