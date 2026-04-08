@@ -22,7 +22,7 @@
     --tag-reserved-fg: oklch(0.35 0.08 55);
     --tag-reserved-bg: oklch(0.93 0.06 55);
     --panel-w: 520px;
-    --radius: 6px;
+    --radius: 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -308,7 +308,11 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     color: var(--c-text2);
 }
 
-.results-list { display: flex; flex-direction: column }
+.results-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--c-border);
+}
 
 .result-group-label {
     font-size: 0.75rem;
@@ -319,20 +323,27 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 }
 .result-group-label:first-child { padding-top: 0.25rem }
 
-.result-item { border-bottom: 1px solid var(--c-border) }
-.result-item:last-child { border-bottom: none }
+.result-item + .result-item { border-top: 1px solid var(--c-border) }
 
 .result-row {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     padding: 0.6rem 0.75rem;
-    border-radius: var(--radius);
+    border-left: 3px solid transparent;
     transition: background 0.12s;
 }
 .result-row.clickable { cursor: pointer }
-.result-row.clickable:hover { background: var(--c-accent-soft) }
+.result-row.clickable:hover {
+    background: var(--c-accent-soft);
+    border-left-color: var(--c-border);
+}
 .result-row.active { background: var(--c-accent-soft) }
+
+/* Hover on colored rows keeps their own color */
+.result-row.row-available.clickable:hover { border-left-color: var(--c-green) }
+.result-row.row-recent.clickable:hover { border-left-color: var(--c-recent-dot) }
+.result-row.row-reserved.clickable:hover { border-left-color: var(--c-orange) }
 
 .result-domain {
     font-family: var(--font-mono);
@@ -341,13 +352,12 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     white-space: nowrap;
 }
 
-/* Available: most prominent */
-.result-row.row-available {
-    background: var(--c-green-soft);
-}
+/* Available: green left bar */
+.result-row.row-available { border-left-color: var(--c-green) }
 .result-row.row-available .result-domain { color: var(--c-green); font-weight: 600 }
 
-/* Recent: warm highlight */
+/* Recent: warm left bar + dot */
+.result-row.row-recent { border-left-color: var(--c-recent-dot) }
 .result-row.row-recent .result-domain { color: var(--c-text) }
 .result-row.row-recent::before {
     content: '';
@@ -358,13 +368,14 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     flex-shrink: 0;
 }
 
-/* Old registered: subdued */
+/* Old registered: no bar, subdued */
 .result-row.row-registered .result-domain { color: var(--c-text2) }
 
-/* Reserved: amber accent */
+/* Reserved: amber left bar */
+.result-row.row-reserved { border-left-color: var(--c-orange) }
 .result-row.row-reserved .result-domain { color: var(--c-text2) }
 
-/* Unknown: most subdued */
+/* Unknown: no bar, most subdued */
 .result-row.row-unknown .result-domain { color: var(--c-gray) }
 
 .result-meta {
@@ -382,18 +393,18 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 .result-tag {
     font-size: 0.6875rem;
     font-weight: 500;
-    padding: 0.15rem 0.45rem;
-    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
     white-space: nowrap;
     letter-spacing: 0.02em;
+    background: none;
 }
 .result-tag.available {
-    color: var(--tag-avail-fg);
-    background: var(--tag-avail-bg);
+    color: var(--c-green);
+    border: 1px solid var(--c-green);
 }
 .result-tag.reserved {
-    color: var(--tag-reserved-fg);
-    background: var(--tag-reserved-bg);
+    color: var(--c-orange);
+    border: 1px solid var(--c-orange);
 }
 
 .copy-btn {
@@ -403,7 +414,7 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     color: var(--c-text2);
     background: none;
     border: 1px solid var(--c-border);
-    border-radius: 3px;
+    border-radius: 0;
     padding: 0.125rem 0.4rem;
     cursor: pointer;
     white-space: nowrap;
@@ -422,7 +433,6 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 .loading-bar {
     height: 3px;
     background: var(--c-border);
-    border-radius: 2px;
     overflow: hidden;
     max-width: 280px;
     margin: 0 auto 0.75rem;
@@ -431,7 +441,6 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     height: 100%;
     width: 35%;
     background: var(--c-accent);
-    border-radius: 2px;
     animation: slide 1.2s ease-in-out infinite;
 }
 @keyframes slide {
@@ -611,7 +620,6 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
 .preview-favicon {
     width: 16px;
     height: 16px;
-    border-radius: 2px;
     flex-shrink: 0;
 }
 .preview-site-link a {
@@ -652,7 +660,6 @@ main:not(.idle) .brand { margin-bottom: 1.5rem }
     font-family: var(--font-mono);
     font-size: 0.75rem;
     padding: 0.1rem 0.35rem;
-    border-radius: 3px;
     background: var(--c-accent-soft);
 }
 .status-code-desc { color: var(--c-text2); font-size: 0.75rem }
