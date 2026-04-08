@@ -41,7 +41,7 @@
   "sectionRawWhois": "原始 WHOIS",
   "screenshotAlt": "网站截图",
   "faqHeading": "常见问题",
-  "faqWhat": "这个工具是做什么的？",
+  "faqWhat": "dmcheck 是什么？",
   "faqWhatAnswer": "dmcheck 可以输入一个关键词，同时查询多个后缀的域名是否可注册。结果通过实时 WHOIS 和 RDAP 协议获取，逐条返回，不用等全部查完。",
   "faqFree": "需要付费吗？",
   "faqFreeAnswer": "dmcheck 完全免费，没有使用次数限制，也不需要注册账号。",

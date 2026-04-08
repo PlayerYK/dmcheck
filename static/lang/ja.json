@@ -41,7 +41,7 @@
   "sectionRawWhois": "WHOIS生データ",
   "screenshotAlt": "サイトスクリーンショット",
   "faqHeading": "よくある質問",
-  "faqWhat": "このツールは何ですか？",
+  "faqWhat": "dmcheck とは？",
   "faqWhatAnswer": "dmcheck はキーワードを入力すると、複数のTLDでドメインの登録可否を一括確認できます。WHOISとRDAPプロトコルでリアルタイムに結果を取得し、順次表示します。",
   "faqFree": "無料ですか？",
   "faqFreeAnswer": "dmcheck は完全無料で、利用回数の制限もアカウント登録も不要です。",

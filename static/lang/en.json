@@ -41,7 +41,7 @@
   "sectionRawWhois": "Raw WHOIS",
   "screenshotAlt": "Website screenshot",
   "faqHeading": "FAQ",
-  "faqWhat": "What does this tool do?",
+  "faqWhat": "What is dmcheck?",
   "faqWhatAnswer": "dmcheck lets you enter a keyword to check whether domains with multiple TLDs are available. Results are fetched in real time via WHOIS and RDAP protocols and streamed back one by one.",
   "faqFree": "Is it free?",
   "faqFreeAnswer": "dmcheck is completely free with no usage limits and no registration required.",

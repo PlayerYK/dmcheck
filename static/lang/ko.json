@@ -41,7 +41,7 @@
   "sectionRawWhois": "WHOIS 원본",
   "screenshotAlt": "웹사이트 스크린샷",
   "faqHeading": "자주 묻는 질문",
-  "faqWhat": "이 도구는 무엇인가요?",
+  "faqWhat": "dmcheck은 무엇인가요?",
   "faqWhatAnswer": "dmcheck은 키워드를 입력하면 여러 TLD에서 도메인 등록 가능 여부를 동시에 확인합니다. WHOIS와 RDAP 프로토콜을 통해 실시간으로 결과를 가져와 하나씩 표시합니다.",
   "faqFree": "무료인가요?",
   "faqFreeAnswer": "dmcheck은 완전히 무료이며 사용 횟수 제한이나 계정 등록이 필요 없습니다.",

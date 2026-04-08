@@ -41,7 +41,7 @@
   "sectionRawWhois": "WHOIS sin procesar",
   "screenshotAlt": "Captura del sitio web",
   "faqHeading": "Preguntas frecuentes",
-  "faqWhat": "¿Qué hace esta herramienta?",
+  "faqWhat": "¿Qué es dmcheck?",
   "faqWhatAnswer": "dmcheck le permite ingresar una palabra clave para verificar la disponibilidad de dominios con múltiples TLDs simultáneamente. Los resultados se obtienen en tiempo real mediante protocolos WHOIS y RDAP.",
   "faqFree": "¿Es gratuito?",
   "faqFreeAnswer": "dmcheck es completamente gratuito, sin límite de uso y sin necesidad de registrarse.",
