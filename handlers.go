@@ -201,7 +201,7 @@ func handleWhois(rdb *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		result := checkWithCache(r.Context(), rdb, domain)
+		result := CheckDomain(domain)
 		writeJSON(w, http.StatusOK, result)
 	}
 }
