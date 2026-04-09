@@ -8,9 +8,10 @@ Enter a keyword, instantly check whether domains across multiple TLDs are availa
 
 - **Real-time streaming** — results appear one by one via SSE, no waiting for all queries to finish
 - **WHOIS + RDAP** — direct queries to registry WHOIS servers (port 43) with RDAP fallback via IANA bootstrap
-- **85 TLDs** preconfigured with WHOIS servers; 1000+ TLDs supported via RDAP fallback
+- **83 TLDs** preconfigured with WHOIS servers; 1000+ TLDs supported via RDAP fallback
 - **Customizable TLD list** — users can edit their TLD list in-browser (saved to localStorage)
 - **Domain detail panel** — registration dates, registrar, DNS servers, status codes, raw WHOIS, site screenshot & favicon
+- **Reserved domain detection** — identifies registry-reserved domains separately from registered or available
 - **Multi-language** — English (default), 中文, 日本語, 한국어, Español
 - **Redis caching** — optional; gracefully degrades to no-cache mode
 - **Rate limiting** — IP-based token bucket to prevent abuse
@@ -58,7 +59,7 @@ go build -o dmcheck .
 | `REDIS_ADDR` | `localhost:6379` | Redis address (set empty to disable) |
 | `RATE_LIMIT` | `2`              | Requests per second per IP           |
 | `RATE_BURST` | `5`              | Rate limiter burst size              |
-| `CACHE_TTL`  | `5m`             | Cache duration (Go duration format)  |
+| `CACHE_TTL`  | `5m`             | Cache TTL for available domains; registered/reserved use 24h |
 
 
 ## Project Structure
@@ -139,6 +140,7 @@ Add these secrets in your GitHub repo (Settings → Secrets → Actions):
 | Secret        | Value                      |
 | ------------- | -------------------------- |
 | `VPS_HOST`    | Your VPS IP or hostname    |
+| `VPS_PORT`    | SSH port (if not 22)       |
 | `VPS_USER`    | `deployer`                 |
 | `VPS_SSH_KEY` | Private key for SSH access |
 
