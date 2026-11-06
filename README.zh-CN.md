@@ -61,34 +61,34 @@ dmcheck 可以作为纯域名可用性查询工具运行，不需要任何注册
 
 `config/registrar-prices.json` 里有两类相关但不同的数据：一类是面向用户展示的注册商跳转/搜索渠道，另一类是用于比价 UI 的自动价格行。某个注册商可以只作为跳转渠道存在，即使它暂时不进入自动价格比价。
 
-当前覆盖情况以 `config/registrar-prices.json` 中的 `updated_at=2026-05-15` 为准：已启用 5 个注册商渠道；价格表总计覆盖 833 个后缀，其中包含 204 个多段后缀。
+`config/registrar-prices.json` 的 2026-11-06 快照启用了 6 个注册商渠道，共覆盖 1,183 个后缀，其中 497 个是多段后缀。
 
 | 注册商 | 用户可见渠道 | 自动价格行数 | 更新方式 | 说明 |
 | ------ | ------------ | ------------ | -------- | ---- |
-| Cloudflare Registrar | 注册控制台跳转 | 0 | 仅跳转 | Cloudflare 发布了 registrar 定位和支持 TLD 信息，但没有适合无人值守刷新的大范围公开价格表。 |
-| Porkbun | 注册/搜索跳转 + 比价 | 632 | 从官方公开价格页自动更新 | 用于提供较广的 TLD 价格覆盖。 |
+| Cloudflare Registrar | 注册控制台跳转 + 比价 | 418 | 官方公开价格页 | 包含官方公布的首年促销价。 |
+| Porkbun | 注册/搜索跳转 + 比价 | 638 | 官方公开价格页 | 用于提供较广的 TLD 价格覆盖。 |
 | Namecheap | 注册/搜索跳转 | 0 | 仅跳转 | 公开价格页阻止脚本刷新，官方价格 API 需要账号凭证。 |
 | Spaceship | 注册/搜索跳转 | 0 | 仅跳转 | `https://www.spaceship.com/domains/` 确实有公开价格页，并通过“See more”交互展示更多行；但无人值守更新脚本用 Node、curl、headless Chrome 访问时都会进入 Cloudflare verification。官方 API 也需要 key/secret 凭证，所以在没有稳定非交互数据源前保持为仅跳转。 |
-| Dynadot | 注册/搜索跳转 + 比价 | 810 | 从官方公开价格页自动更新 | 用于提供较广的 TLD 价格覆盖，也包含较多多段后缀。 |
+| Dynadot | 注册/搜索跳转 + 比价 | 816 | 官方公开价格页 | 用于提供较广的 TLD 价格覆盖，也包含较多多段后缀。 |
+| OVHcloud | 注册/搜索跳转 + 比价 | 900 | 国际站美元价格页 | 包含官方公布的首年促销价。 |
 
 NameSilo 和 GoDaddy 已经过评估，但当前配置中还没有启用为渠道。只有当我们拿到稳定的无人值守公开数据源，或明确要做带凭证的集成时，才会加入。
 
 ### 更新注册商价格参考
 
+有需要时手动刷新价格表。先在仓库根目录试跑，检查价格来源和覆盖数量。
+
 ```bash
-node scripts/update-registrar-prices.mjs --date=YYYY-MM-DD
+node scripts/update-registrar-prices.mjs --dry-run
 ```
 
-更新机制：
-
-- 从仓库根目录运行脚本，建议每周刷新一次，并在每次涉及注册商行为的发布前刷新。
-- 脚本会抓取 Porkbun 和 Dynadot 的官方公开价格页，解析首年注册价和续费价，清理非自动源的旧价格行，排序后写回 `config/registrar-prices.json`。
-- 如果 Porkbun 返回少于 100 行，或 Dynadot 返回少于 300 行，脚本会拒绝覆盖配置，避免把反爬页面或临时错误页误写进价格表。
-- 每次刷新后检查脚本打印的覆盖数量；只有当两个自动源都通过行数护栏时，才提交生成的 `config/registrar-prices.json`。
+- 去掉 `--dry-run` 再运行，即可写入 `config/registrar-prices.json`。可用 `--date=YYYY-MM-DD` 指定价格表日期。
+- 脚本会抓取 Cloudflare、Porkbun、Dynadot 和 OVHcloud 的官方美元价格。每次刷新时，Cloudflare 和 OVHcloud 的价格行会根据同时有注册价和续费价的报价重新生成。
+- 所有来源达到最低行数才会写入价格表。Cloudflare 至少 300 行，Porkbun 至少 100 行，Dynadot 至少 300 行，OVHcloud 至少 600 行。提交生成的文件前，请检查脚本打印的覆盖数量。
 
 如果某个来源持续失败，就先不要把它放进自动价格源，直到它重新提供稳定的公开数据。
 
-暂不自动抓取或展示价格的服务商：Namecheap、NameSilo、Spaceship、GoDaddy 需要账号/API 凭证、浏览器交互，或阻止脚本访问公开价格页；Cloudflare 发布了 registrar 定位和支持 TLD 信息，但没有适合无人值守刷新的大范围公开价格表。
+获取 Namecheap、NameSilo、Spaceship 和 GoDaddy 的价格仍需要账号或 API 凭证、浏览器交互，或可供脚本访问的数据源。
 
 ### 环境变量
 
@@ -230,7 +230,7 @@ sudo systemctl restart dmcheck
 - [rdap.org](https://rdap.org) — RDAP 查询 fallback
 - [screenshot.domains](https://screenshot.domains) — 网站截图
 - [favicon.im](https://favicon.im) — 网站 favicon
-- [Porkbun domain pricing](https://porkbun.com/products/domains/) 和 [Dynadot domain pricing](https://www.dynadot.com/domain/prices) — 注册价格参考来源
+- 注册价格参考来自 [Cloudflare](https://pricing.registrar.cloudflare.com/)、[Porkbun](https://porkbun.com/products/domains/)、[Dynadot](https://www.dynadot.com/domain/prices) 和 [OVHcloud](https://www.ovhcloud.com/en/domains/tld/)
 
 ## 贡献
 

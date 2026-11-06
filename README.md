@@ -77,34 +77,34 @@ Set `REGISTRAR_PRICES_ENABLED=true` to enable the optional registrar module. Whe
 
 `config/registrar-prices.json` contains two related but separate things: enabled registrar channels for outbound registration/search links, and automated price rows for the comparison UI. A registrar can be available as a link-only channel even when it is not used for automated pricing.
 
-Current coverage as of `config/registrar-prices.json` `updated_at=2026-05-15`: 5 enabled registrar channels, 833 priced TLDs total, including 204 multi-label TLDs.
+The 2026-11-06 snapshot in `config/registrar-prices.json` has 6 enabled registrar channels and covers 1,183 suffixes, including 497 multi-label suffixes.
 
 | Registrar | User-facing channel | Automated price rows | Update mode | Notes |
 | --------- | ------------------- | -------------------- | ----------- | ----- |
-| Cloudflare Registrar | Registration dashboard link | 0 | Link only | Cloudflare publishes registrar positioning and supported TLD information, but not a broad public price table suitable for unattended refreshes. |
-| Porkbun | Registration/search link and price comparison | 632 | Automated from official public pricing page | Used for broad TLD coverage. |
+| Cloudflare Registrar | Registration dashboard link and price comparison | 418 | Official public pricing page | Includes published first-year promotions. |
+| Porkbun | Registration/search link and price comparison | 638 | Official public pricing page | Used for broad TLD coverage. |
 | Namecheap | Registration/search link | 0 | Link only | Public pricing pages block scripted refresh and the official pricing API requires account credentials. |
 | Spaceship | Registration/search link | 0 | Link only | A public domain pricing page exists at `https://www.spaceship.com/domains/` and exposes more rows through a "See more" UI, but the unattended updater receives Cloudflare verification from Node, curl, and headless Chrome. The official API also requires key/secret credentials, so this stays link-only until there is a stable non-interactive source. |
-| Dynadot | Registration/search link and price comparison | 810 | Automated from official public pricing page | Used for broad TLD coverage, including many multi-label TLDs. |
+| Dynadot | Registration/search link and price comparison | 816 | Official public pricing page | Used for broad TLD coverage, including many multi-label TLDs. |
+| OVHcloud | Registration/search link and price comparison | 900 | Worldwide USD pricing page | Includes published first-year promotions. |
 
 NameSilo and GoDaddy have been evaluated but are not enabled channels in the current config. They are kept out until we have a stable unattended source or an intentional credential-backed integration.
 
 ### Updating registrar price references
 
+Refresh the price table manually as needed. From the repo root, check the price sources with a dry run.
+
 ```bash
-node scripts/update-registrar-prices.mjs --date=YYYY-MM-DD
+node scripts/update-registrar-prices.mjs --dry-run
 ```
 
-Update mechanism:
-
-- Run the script from the repo root weekly and before each release that changes registrar behavior.
-- The script fetches the official Porkbun and Dynadot pricing pages, parses first-year registration and renewal prices, removes price rows from non-automated sources, sorts the generated data, and writes `config/registrar-prices.json`.
-- The script refuses to overwrite the config if Porkbun returns fewer than 100 rows or Dynadot returns fewer than 300 rows, which helps avoid replacing the price table with an anti-bot or transient error page.
-- Review the printed coverage counts after every refresh, then commit the generated `config/registrar-prices.json` only when both automated sources pass their guards.
+- Run the command again without `--dry-run` to write `config/registrar-prices.json`. Use `--date=YYYY-MM-DD` to set the snapshot date explicitly.
+- The script fetches official USD price pages from Cloudflare, Porkbun, Dynadot, and OVHcloud. Cloudflare and OVHcloud price rows are rebuilt from quotes that include both registration and renewal.
+- The price table is written only when all sources pass their minimum row counts (Cloudflare 300, Porkbun 100, Dynadot 300, and OVHcloud 600). Review the printed coverage before committing the generated file.
 
 If a source starts failing consistently, leave it out of automated pricing until it has a stable public feed again.
 
-Providers intentionally not automated or priced: Namecheap, NameSilo, Spaceship, and GoDaddy require account/API credentials, browser-only interaction, or block scripted access to public pricing pages; Cloudflare publishes registrar positioning and supported TLD information but not a broad public price table suitable for unattended refreshes.
+Pricing from Namecheap, NameSilo, Spaceship, and GoDaddy still requires account or API credentials, browser interaction, or a source that allows scripted access.
 
 
 ### Environment variables
@@ -250,7 +250,7 @@ sudo systemctl restart dmcheck
 - [rdap.org](https://rdap.org) — RDAP query fallback
 - [screenshot.domains](https://screenshot.domains) — website screenshots
 - [favicon.im](https://favicon.im) — website favicons
-- [Porkbun domain pricing](https://porkbun.com/products/domains/) and [Dynadot domain pricing](https://www.dynadot.com/domain/prices) are used as registration price references
+- Registration price references from [Cloudflare](https://pricing.registrar.cloudflare.com/), [Porkbun](https://porkbun.com/products/domains/), [Dynadot](https://www.dynadot.com/domain/prices), and [OVHcloud](https://www.ovhcloud.com/en/domains/tld/)
 
 ## Contributing
 
