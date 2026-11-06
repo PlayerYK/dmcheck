@@ -6,19 +6,6 @@ Languages: English | [简体中文](README.zh-CN.md)
 
 Enter a keyword, instantly check whether domains across multiple TLDs are available — results stream back in real time.
 
-## Product Experience Principles
-
-dmcheck is designed for fast, repeated domain screening: enter one keyword, scan a focused set of TLD results, inspect details only when needed, and optionally create a compact result image for sharing.
-
-- **Feels fast first** — the interface stays quiet, results stream in place, cached data is used where safe, and heavy detail queries happen only after a row is opened.
-- **Simple input, precise control** — the primary path is a single keyword input; TLD settings use a long text area so users can paste, edit, remove, and reorder suffixes without checkbox fatigue.
-- **Scannable results** — available domains are grouped first after completion, each row shows the domain and one clear result, registered domains show the registration date, and very recent registrations use relative labels such as today, yesterday, or N days ago.
-- **Details stay out of the way** — registered, reserved, and unknown domains open a detail drawer with cached preview first and live WHOIS/RDAP details after click; website screenshot and favicon loading remain on demand.
-- **Sharing is a separate flow** — the main page width is optimized for use, not screenshots. The result image flow generates a narrow PNG, previews it in a dialog, then offers copy, download, and system share actions.
-- **Homepage stays focused** — FAQ content lives on a dedicated page while homepage SEO is handled through metadata, structured data, canonical/hreflang links, robots, and sitemap files.
-- **Efficient visual tone** — the UI should feel minimal, technical, and quick, with Graphite/Carbon themes, restrained motion, no broad gradients, and no decorative distractions.
-- **Debuggable in production** — the footer and `app-version` meta tag expose the deployed version so bug reports can be tied to a specific build.
-
 ## Features
 
 - **Real-time streaming** — results appear one by one via SSE, no waiting for all queries to finish
@@ -26,7 +13,6 @@ dmcheck is designed for fast, repeated domain screening: enter one keyword, scan
 - **83 TLDs** preconfigured with WHOIS servers; 1000+ TLDs supported via RDAP fallback
 - **Customizable TLD list** — users can edit their TLD list in-browser (saved to localStorage)
 - **Domain detail panel** — registration dates, registrar, DNS servers, status codes, raw WHOIS, optional site screenshot & favicon
-- **Result image export** — compact PNG preview with copy, download, and system share actions
 - **Optional registrar links and price comparison** — when enabled, available domains can show configured registrar links, first-year USD reference prices, and a detail-drawer comparison
 - **Reserved domain detection** — identifies registry-reserved domains separately from registered or available
 - **Multi-language** — English (default), 中文, 日本語, 한국어, Español
