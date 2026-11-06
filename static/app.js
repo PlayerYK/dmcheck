@@ -67,8 +67,7 @@
   let activeRow = null;
   let panelRestoreTarget = null;
   let panelRequestSeq = 0;
-  let currentSearchKeyword = '';
-  let currentPinnedDomain = '';
+  let currentSearch = { keyword: '', parts: [], suffix: '', pinnedDomain: '' };
   let currentExpected = DEFAULT_TLDS.length;
   let currentReceived = DEFAULT_TLDS.length;
   let activeSnapshotBlob = null;
@@ -346,17 +345,17 @@
     const compact = raw.replace(/\s+/g, '');
     const dot = compact.lastIndexOf('.');
     const suffix = compact.slice(dot + 1);
-    if (dot > 0 && /^[a-zA-Z]{2,}$/.test(suffix)) {
-      return { keyword: compact.slice(0, dot), suffix: suffix.toLowerCase() };
-    }
-    return { keyword: compact, suffix: '' };
+    const hasSuffix = dot > 0 && /^[a-zA-Z]{2,}$/.test(suffix);
+    const label = hasSuffix ? raw.slice(0, raw.lastIndexOf('.')) : raw;
+    return {
+      keyword: hasSuffix ? compact.slice(0, dot) : compact,
+      parts: label.trim().split(/\s+/),
+      suffix: hasSuffix ? suffix.toLowerCase() : ''
+    };
   }
 
   function updateQueryPreview() {
-    const raw = input.value;
-    const { keyword, suffix } = parseSearchInput(raw);
-    const label = suffix ? raw.slice(0, raw.lastIndexOf('.')) : raw;
-    const parts = label.trim().split(/\s+/);
+    const { keyword, parts, suffix } = parseSearchInput(input.value);
 
     queryPreview.replaceChildren();
     queryPreview.hidden = !isValidLabel(keyword) || (parts.length === 1 && !suffix);
@@ -415,7 +414,8 @@
   }
 
   function doSearch() {
-    const { keyword: searchKeyword, suffix } = parseSearchInput(input.value);
+    const search = parseSearchInput(input.value);
+    const { keyword: searchKeyword, suffix } = search;
     const tlds = getTlds();
     const validation = validateSearch(searchKeyword, tlds);
     if (validation) {
@@ -433,8 +433,10 @@
     closePanel(false);
 
     const searchTlds = suffix && !tlds.includes(suffix) ? [suffix, ...tlds] : tlds;
-    currentSearchKeyword = searchKeyword;
-    currentPinnedDomain = suffix ? searchKeyword.toLowerCase() + '.' + suffix : '';
+    currentSearch = {
+      ...search,
+      pinnedDomain: suffix ? searchKeyword.toLowerCase() + '.' + suffix : ''
+    };
     currentExpected = searchTlds.length;
     currentReceived = 0;
     if (ledgerTitle) ledgerTitle.textContent = searchKeyword;
@@ -677,7 +679,7 @@
   function sortedResults() {
     var pinned = [], available = [], recent = [], registered = [], reserved = [], unknown = [];
     allResults.forEach(function(r) {
-      if (r.domain === currentPinnedDomain) pinned.push(r);
+      if (r.domain === currentSearch.pinnedDomain) pinned.push(r);
       else if (r.status === 'available') available.push(r);
       else if (r.status === 'registered' && isRecentDate(r.registered)) recent.push(r);
       else if (r.status === 'registered') registered.push(r);
@@ -707,7 +709,7 @@
 
   function appendRow(r) {
     const row = buildRow(r);
-    if (r.domain === currentPinnedDomain) resultsList.prepend(row);
+    if (r.domain === currentSearch.pinnedDomain) resultsList.prepend(row);
     else resultsList.appendChild(row);
     updateSnapshotButton();
   }
@@ -881,18 +883,23 @@
     const hiddenRows = Math.max(0, rows.length - visibleRows.length);
     const width = 560;
     const pad = 28;
-    const headerH = 102;
+    const contentWidth = width - pad * 2;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const chipFont = '600 20px ' + sansFont();
+    ctx.font = chipFont;
+    const chips = snapshotQueryChips(ctx, currentSearch, contentWidth);
+    const headerExtra = chips.length ? chips[chips.length - 1].y : 0;
+    const headerH = 102 + headerExtra;
     const rowH = 38;
     const footerH = 50;
     const height = headerH + (visibleRows.length + (hiddenRows ? 1 : 0)) * rowH + footerH;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const canvas = document.createElement('canvas');
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = '100%';
     canvas.style.maxWidth = width + 'px';
     canvas.style.height = 'auto';
-    const ctx = canvas.getContext('2d');
     const pal = snapshotPalette();
     ctx.scale(dpr, dpr);
     ctx.fillStyle = pal.bg;
@@ -903,13 +910,30 @@
     ctx.lineWidth = 1;
     strokeRoundRect(ctx, 12.5, 12.5, width - 25, height - 25, 8);
 
-    ctx.fillStyle = pal.ink;
-    ctx.font = '620 30px ' + sansFont();
-    drawFit(ctx, currentSearchKeyword || 'dmcheck', pad, 54, width - pad * 2);
+    if (chips.length) {
+      ctx.font = chipFont;
+      chips.forEach(chip => {
+        const x = pad + chip.x;
+        const y = 26 + chip.y;
+        if (chip.plus) {
+          ctx.fillStyle = pal.muted;
+          ctx.fillText('+', x - 20, y + 23);
+        }
+        fillRoundRect(ctx, x, y, chip.width, 34, 5, pal.mutedSoft);
+        ctx.strokeStyle = pal.border;
+        strokeRoundRect(ctx, x + .5, y + .5, chip.width - 1, 33, 5);
+        ctx.fillStyle = chip.isSuffix ? pal.queryAccent : pal.ink;
+        drawFit(ctx, chip.text, x + 10, y + 23, chip.width - 20);
+      });
+    } else {
+      ctx.fillStyle = pal.ink;
+      ctx.font = '620 30px ' + sansFont();
+      drawFit(ctx, currentSearch.keyword || 'dmcheck', pad, 54, contentWidth);
+    }
 
     ctx.fillStyle = pal.muted;
     ctx.font = '460 13px ' + sansFont();
-    drawFit(ctx, snapshotSummaryText(stats), pad, 82, width - pad * 2);
+    drawFit(ctx, snapshotSummaryText(stats), pad, 82 + headerExtra, contentWidth);
 
     ctx.strokeStyle = pal.border;
     ctx.beginPath();
@@ -935,14 +959,35 @@
     ctx.lineTo(width - pad, height - 40);
     ctx.stroke();
 
-    ctx.fillStyle = pal.faint;
-    ctx.font = '460 12px ' + sansFont();
-    drawFit(ctx, T('snapshotFooter'), pad, height - 20, width - pad * 2 - 190);
+    ctx.fillStyle = pal.muted;
+    ctx.font = '650 13px ' + sansFont();
+    ctx.fillText('dmCheck.app', pad, height - 20);
     ctx.textAlign = 'right';
     ctx.font = '460 12px ' + sansFont();
-    drawFit(ctx, T('snapshotChecked').replace('{time}', snapshotTime()), width - pad, height - 20, 190);
+    drawFit(ctx, T('snapshotGenerated').replace('{time}', snapshotTime()), width - pad, height - 20, contentWidth - 120);
     ctx.textAlign = 'left';
     return canvas;
+  }
+
+  function snapshotQueryChips(ctx, search, maxWidth) {
+    if (search.parts.length < 2 && !search.suffix) return [];
+    const labels = search.suffix ? [...search.parts, '.' + search.suffix] : search.parts;
+    let x = 0;
+    let y = 0;
+    return labels.map((text, index) => {
+      const isSuffix = index === search.parts.length;
+      const plus = index > 0 && !isSuffix;
+      const gap = plus ? 26 : index > 0 ? 8 : 0;
+      const width = Math.min(Math.ceil(ctx.measureText(text).width) + 20, maxWidth - gap);
+      if (x + gap + width > maxWidth) {
+        x = 0;
+        y += 42;
+      }
+      x += gap;
+      const chip = { text, x, y, width, plus, isSuffix };
+      x += width;
+      return chip;
+    });
   }
 
   function drawSnapshotRow(ctx, r, index, x, y, w, h, pal) {
@@ -952,8 +997,7 @@
       fillRoundRect(ctx, x - 8, y + 4, w + 16, h - 8, 5, pal.rowAlt);
     }
 
-    ctx.fillStyle = tone.color;
-    fillRoundRect(ctx, x, y + 15, 4, 8, 2, tone.color);
+    fillRoundRect(ctx, x, y + (h - 6) / 2, 6, 6, 3, tone.color);
 
     const result = snapshotResultText(r);
     ctx.font = tone.plain ? '500 13px ' + monoFont() : '560 12px ' + sansFont();
@@ -1036,7 +1080,7 @@
         ink: '#e9eff0',
         muted: '#a9b4b8',
         brand: '#7f8b90',
-        faint: '#748086',
+        queryAccent: '#89e1d8',
         border: '#455256',
         borderSoft: '#303b3f',
         green: '#89e6aa',
@@ -1058,7 +1102,7 @@
       ink: '#1f2a33',
       muted: '#62707a',
       brand: '#8a959b',
-      faint: '#98a2a7',
+      queryAccent: '#075668',
       border: '#d7dddf',
       borderSoft: '#e7ebec',
       green: '#168957',
@@ -1117,7 +1161,7 @@
   }
 
   function snapshotFileName() {
-    const base = (currentSearchKeyword || 'domains').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'domains';
+    const base = (currentSearch.keyword || 'domains').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'domains';
     return 'dmcheck-' + base + '.png';
   }
 
