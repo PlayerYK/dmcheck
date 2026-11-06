@@ -28,7 +28,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/site.webmanifest">
-    <link rel="stylesheet" href="/style.css?v=25">
+    <link rel="stylesheet" href="/style.css?v=27">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -97,7 +97,7 @@
         <section class="query-band" aria-label="Search">
             <form id="searchForm" class="query-form" autocomplete="off">
                 <div class="query-input-wrap">
-                    <input type="text" id="keyword" class="query-input" data-i18n-placeholder="searchPlaceholder" placeholder="Enter keyword to check domains" spellcheck="false" aria-describedby="formError" autofocus>
+                    <input type="text" id="keyword" class="query-input" data-i18n-placeholder="searchPlaceholder" placeholder="Enter keyword to check domains" spellcheck="false" aria-describedby="formError queryPreview" autofocus>
                     <div class="suffix-preview" id="suffixPreview" aria-label="TLD settings">
                         <span class="suffix-chip" id="suffixOne">.com</span>
                         <span class="suffix-chip" id="suffixTwo">.ai</span>
@@ -110,6 +110,7 @@
                     <span class="btn-text" data-i18n="searchBtn">Check</span>
                     <svg class="btn-spinner" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round"/></svg>
                 </button>
+                <p id="queryPreview" class="query-preview" hidden></p>
             </form>
             <p id="formError" class="form-error" role="alert" hidden></p>
             <div class="query-meta">
@@ -211,6 +212,6 @@
         </div>
     </section>
 
-    <script src="/app.js?v=25"></script>
+    <script src="/app.js?v=27"></script>
 </body>
 </html>
