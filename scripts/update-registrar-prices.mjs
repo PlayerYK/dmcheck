@@ -10,9 +10,10 @@ const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '..', 'config', 'registrar-p
 const SOURCES = {
   porkbun: 'https://porkbun.com/products/domains/',
   dynadot: 'https://www.dynadot.com/domain/prices',
+  cloudflare: 'https://pricing.registrar.cloudflare.com/',
+  ovhcloud: 'https://www.ovhcloud.com/en/domains/tld/',
 };
 
-const AUTOMATED_PRICE_REGISTRARS = Object.keys(SOURCES);
 const PRICE_FIELD_ORDER = ['registration_usd', 'renewal_usd', 'source_url'];
 
 function parseArgs(argv) {
@@ -45,7 +46,7 @@ function parseArgs(argv) {
   return options;
 }
 
-async function fetchText(url) {
+async function fetchText(url, extraHeaders = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
   try {
@@ -53,6 +54,7 @@ async function fetchText(url) {
       headers: {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'user-agent': 'dmcheck-price-updater/1.0 (+https://dmcheck.app)',
+        ...extraHeaders,
       },
       signal: controller.signal,
     });
@@ -280,6 +282,61 @@ function parseDynadot(html) {
   };
 }
 
+function parseDollarCell(cell = '') {
+  const amount = cell.replace(/<[^>]+>/g, '').trim();
+  const dollars = /^\$\s*(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/;
+  return dollars.test(amount) ? parsePrice(amount.replaceAll(',', '')) : 0;
+}
+
+function parseCloudflare(html) {
+  const table = [...html.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)]
+    .map(([, content]) => content)
+    .find((content) => {
+      const header = content.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/i)?.[1] || '';
+      const columns = [...header.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)]
+        .map(([, cell]) => cell.replace(/<[^>]+>/g, '').trim());
+      return columns[0] === 'Extension' && columns[1] === 'Registration' && columns[2] === 'Renewal';
+    }) || '';
+
+  const parseCell = (cell = '') => {
+    // The discounted registration cell hides the struck-through list price from screen readers.
+    return parseDollarCell(cell.replace(/<span\b[^>]*\baria-hidden=["']true["'][^>]*>[\s\S]*?<\/span>/gi, ''));
+  };
+
+  const prices = new Map();
+  for (const [, row] of table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const tld = normalizeTLD(row.match(/<th\b[^>]*\bscope=["']row["'][^>]*>\s*(\.[^<]+)<\/th>/i)?.[1]);
+    const [registration, renewal] = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
+    const registrationUSD = parseCell(registration?.[1]);
+    const renewalUSD = parseCell(renewal?.[1]);
+    if (tld && registrationUSD && renewalUSD) {
+      prices.set(tld, { tld, registration_usd: registrationUSD, renewal_usd: renewalUSD });
+    }
+  }
+  return [...prices.values()];
+}
+
+function parseOVHcloud(html) {
+  // Other OVHcloud markets can display a dollar sign for a different currency.
+  const market = html.match(/\{[^{}]*"page_name"\s*:\s*"domains::prices"[^{}]*\}/)?.[0] || '';
+  if (!/"env_currency"\s*:\s*"USD"/.test(market)) {
+    throw new Error('OVHcloud pricing page did not confirm USD; refusing to overwrite config');
+  }
+
+  const prices = new Map();
+  for (const [, row] of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const tld = normalizeTLD(row.match(/\bdata-plancode=["']([^"']+)["']/i)?.[1]);
+    const registration = row.match(/<td\b[^>]*\bdata-price-type=["']installation["'][^>]*>([\s\S]*?)<\/td>/i)?.[1];
+    const renewal = row.match(/<td\b[^>]*\bdata-price-type=["']renew["'][^>]*>([\s\S]*?)<\/td>/i)?.[1];
+    const registrationUSD = parseDollarCell(registration);
+    const renewalUSD = parseDollarCell(renewal);
+    if (tld && registrationUSD && renewalUSD) {
+      prices.set(tld, { tld, registration_usd: registrationUSD, renewal_usd: renewalUSD });
+    }
+  }
+  return [...prices.values()];
+}
+
 function mergePrice(prices, tld, registrarID, nextRow) {
   if (!prices[tld]) {
     prices[tld] = {};
@@ -319,11 +376,11 @@ function sortPriceRow(row) {
   return sorted;
 }
 
-function pruneUnmanagedPrices(prices, managedRegistrars) {
-  const managed = new Set(managedRegistrars);
+function prunePreviousPrices(prices, retainedRegistrars) {
+  const retained = new Set(retainedRegistrars);
   for (const [tld, rows] of Object.entries(prices)) {
     for (const registrarID of Object.keys(rows || {})) {
-      if (!managed.has(registrarID)) {
+      if (!retained.has(registrarID)) {
         delete rows[registrarID];
       }
     }
@@ -371,14 +428,21 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const config = JSON.parse(await fs.readFile(options.config, 'utf8'));
 
-  const [porkbunHTML, dynadotHTML] = await Promise.all([
+  const [porkbunHTML, dynadotHTML, cloudflareHTML, ovhcloudHTML] = await Promise.all([
     fetchText(SOURCES.porkbun),
-    fetchText(SOURCES.dynadot),
+    // Dynadot's currency selector stores USD as glbl_curr=0.
+    fetchText(SOURCES.dynadot, { cookie: 'glbl_curr=0' }),
+    fetchText(SOURCES.cloudflare),
+    fetchText(SOURCES.ovhcloud),
   ]);
 
   const porkbunPrices = parsePorkbun(porkbunHTML);
   const dynadot = parseDynadot(dynadotHTML);
   const dynadotPrices = dynadot.prices;
+  const completeSources = [
+    { id: 'cloudflare', name: 'Cloudflare', rows: parseCloudflare(cloudflareHTML), minimum: 300 },
+    { id: 'ovhcloud', name: 'OVHcloud', rows: parseOVHcloud(ovhcloudHTML), minimum: 600 },
+  ];
 
   if (porkbunPrices.length < 100) {
     throw new Error(`Porkbun source returned only ${porkbunPrices.length} prices; refusing to overwrite config`);
@@ -386,11 +450,17 @@ async function main() {
   if (dynadot.nuxtCount < 300) {
     throw new Error(`Dynadot source returned only ${dynadot.nuxtCount} full-table prices; refusing to overwrite config`);
   }
+  for (const { name, rows, minimum } of completeSources) {
+    if (rows.length < minimum) {
+      throw new Error(`${name} source returned only ${rows.length} complete USD price pairs; refusing to overwrite config`);
+    }
+  }
 
   config.currency = 'USD';
   config.updated_at = options.date;
   config.prices ||= {};
-  pruneUnmanagedPrices(config.prices, AUTOMATED_PRICE_REGISTRARS);
+  // Keep the legacy merge for Porkbun and Dynadot. Rebuild the other price rows from complete pairs.
+  prunePreviousPrices(config.prices, ['porkbun', 'dynadot']);
 
   for (const row of porkbunPrices) {
     mergePrice(config.prices, row.tld, 'porkbun', row);
@@ -400,6 +470,11 @@ async function main() {
       ...row,
       source_url: SOURCES.dynadot,
     });
+  }
+  for (const { id, rows } of completeSources) {
+    for (const row of rows) {
+      mergePrice(config.prices, row.tld, id, row);
+    }
   }
 
   const registrarOrder = (config.registrars || []).map((registrar) => registrar.id);
@@ -413,6 +488,9 @@ async function main() {
   console.log(`Porkbun prices parsed: ${porkbunPrices.length}`);
   console.log(`Dynadot full-table prices parsed: ${dynadot.nuxtCount}`);
   console.log(`Dynadot JSON-LD fallback offers parsed: ${dynadot.jsonLdCount}`);
+  for (const { name, rows } of completeSources) {
+    console.log(`${name} complete USD price pairs parsed: ${rows.length}`);
+  }
   console.log(`${options.dryRun ? 'Would write' : 'Wrote'} ${path.relative(process.cwd(), options.config)}`);
   console.log(`Total priced TLDs: ${Object.keys(config.prices).length}`);
   console.log(`Registrar coverage: ${Object.entries(counts).map(([key, value]) => `${key}=${value}`).join(', ')}`);
