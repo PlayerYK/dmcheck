@@ -339,6 +339,27 @@ h1 {
       height: 16px;
       animation: none;
     }
+    .query-preview {
+      grid-column: 1 / -1;
+      margin: 0 2px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 2;
+      overflow-wrap: anywhere;
+    }
+    .query-preview-chip {
+      display: inline-block;
+      max-width: 100%;
+      padding: 0 6px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      background: var(--surface-2);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    .query-preview-suffix {
+      color: color-mix(in oklch, var(--blue) 68%, var(--ink));
+    }
     .form-error {
       margin: 8px 2px 0;
       color: var(--red);
@@ -1650,6 +1671,9 @@ h1 {
       }
       .query-form {
         grid-template-columns: 1fr;
+      }
+      .query-preview {
+        grid-row: 2;
       }
       .query-input {
         min-height: 54px;

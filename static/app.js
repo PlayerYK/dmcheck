@@ -18,6 +18,7 @@
   const app = $('#app');
   const form = $('#searchForm');
   const input = $('#keyword');
+  const queryPreview = $('#queryPreview');
   const searchBtn = $('#searchBtn');
   const btnText = searchBtn.querySelector('.btn-text');
   const btnSpinner = searchBtn.querySelector('.btn-spinner');
@@ -67,6 +68,7 @@
   let panelRestoreTarget = null;
   let panelRequestSeq = 0;
   let currentSearchKeyword = '';
+  let currentPinnedDomain = '';
   let currentExpected = DEFAULT_TLDS.length;
   let currentReceived = DEFAULT_TLDS.length;
   let activeSnapshotBlob = null;
@@ -219,15 +221,19 @@
     panelClose.addEventListener('click', () => closePanel(true));
     panelOverlay.addEventListener('click', closePanel);
     $('#errorDismiss').addEventListener('click', () => setState('idle'));
-    input.addEventListener('input', () => {
+    input.addEventListener('input', event => {
       if (clearBtn) clearBtn.hidden = !input.value;
       clearFormError();
+      if (!event.isComposing) updateQueryPreview();
     });
+    input.addEventListener('compositionend', updateQueryPreview);
+    updateQueryPreview();
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         input.value = '';
         clearBtn.hidden = true;
         clearFormError();
+        updateQueryPreview();
         input.focus();
       });
     }
@@ -336,18 +342,40 @@
     return s.length > 0 && s.length <= 63 && TLD_RE.test(s);
   }
 
-  function prepareSearch(keyword, tlds) {
-    var searchKeyword = keyword;
-    var searchTlds = tlds.slice();
-    var dotIdx = keyword.lastIndexOf('.');
-    if (dotIdx > 0 && /^[a-zA-Z]{2,}$/.test(keyword.substring(dotIdx + 1))) {
-      searchKeyword = keyword.substring(0, dotIdx);
-      var extraTld = keyword.substring(dotIdx + 1).toLowerCase();
-      if (searchTlds.indexOf(extraTld) < 0) {
-        searchTlds.unshift(extraTld);
-      }
+  function parseSearchInput(raw) {
+    const compact = raw.replace(/\s+/g, '');
+    const dot = compact.lastIndexOf('.');
+    const suffix = compact.slice(dot + 1);
+    if (dot > 0 && /^[a-zA-Z]{2,}$/.test(suffix)) {
+      return { keyword: compact.slice(0, dot), suffix: suffix.toLowerCase() };
     }
-    return { keyword: searchKeyword, tlds: searchTlds };
+    return { keyword: compact, suffix: '' };
+  }
+
+  function updateQueryPreview() {
+    const raw = input.value;
+    const { keyword, suffix } = parseSearchInput(raw);
+    const label = suffix ? raw.slice(0, raw.lastIndexOf('.')) : raw;
+    const parts = label.trim().split(/\s+/);
+
+    queryPreview.replaceChildren();
+    queryPreview.hidden = !isValidLabel(keyword) || (parts.length === 1 && !suffix);
+    if (queryPreview.hidden) return;
+
+    parts.forEach((part, index) => {
+      if (index > 0) queryPreview.append(' + ');
+      const chip = document.createElement('span');
+      chip.className = 'query-preview-chip';
+      chip.textContent = part;
+      queryPreview.append(chip);
+    });
+
+    if (suffix) {
+      const extension = document.createElement('span');
+      extension.className = 'query-preview-chip query-preview-suffix';
+      extension.textContent = '.' + suffix;
+      queryPreview.append(' ', extension);
+    }
   }
 
   function validateSearch(keyword, tlds) {
@@ -355,10 +383,7 @@
       return { message: T('errorEmptyKeyword'), target: input };
     }
 
-    var dotIdx = keyword.lastIndexOf('.');
-    var domainLike = dotIdx > 0 && /^[a-zA-Z]{2,}$/.test(keyword.substring(dotIdx + 1));
-    var label = domainLike ? keyword.substring(0, dotIdx) : keyword;
-    if (!isValidLabel(label)) {
+    if (!isValidLabel(keyword)) {
       return { message: T('errorInvalidKeyword'), target: input };
     }
 
@@ -390,10 +415,9 @@
   }
 
   function doSearch() {
-    const raw = input.value;
-    const keyword = raw.replace(/[\s\u3000]+/g, '');
+    const { keyword: searchKeyword, suffix } = parseSearchInput(input.value);
     const tlds = getTlds();
-    const validation = validateSearch(keyword, tlds);
+    const validation = validateSearch(searchKeyword, tlds);
     if (validation) {
       showFormError(validation.message, validation.target);
       return;
@@ -408,10 +432,9 @@
     resultsList.innerHTML = '';
     closePanel(false);
 
-    var prepared = prepareSearch(keyword, tlds);
-    var searchKeyword = prepared.keyword;
-    var searchTlds = prepared.tlds;
+    const searchTlds = suffix && !tlds.includes(suffix) ? [suffix, ...tlds] : tlds;
     currentSearchKeyword = searchKeyword;
+    currentPinnedDomain = suffix ? searchKeyword.toLowerCase() + '.' + suffix : '';
     currentExpected = searchTlds.length;
     currentReceived = 0;
     if (ledgerTitle) ledgerTitle.textContent = searchKeyword;
@@ -652,15 +675,16 @@
   }
 
   function sortedResults() {
-    var available = [], recent = [], registered = [], reserved = [], unknown = [];
+    var pinned = [], available = [], recent = [], registered = [], reserved = [], unknown = [];
     allResults.forEach(function(r) {
-      if (r.status === 'available') available.push(r);
+      if (r.domain === currentPinnedDomain) pinned.push(r);
+      else if (r.status === 'available') available.push(r);
       else if (r.status === 'registered' && isRecentDate(r.registered)) recent.push(r);
       else if (r.status === 'registered') registered.push(r);
       else if (r.status === 'reserved') reserved.push(r);
       else unknown.push(r);
     });
-    return available.concat(recent, registered, reserved, unknown);
+    return pinned.concat(available, recent, registered, reserved, unknown);
   }
 
   function retryUnknowns() {
@@ -671,7 +695,7 @@
         .then(function(res) { if (!res.ok) throw new Error(); return res.json(); })
         .then(function(data) {
           if (data.status === 'unknown') return;
-          var idx = allResults.findIndex(function(x) { return x.domain === r.domain; });
+          var idx = allResults.indexOf(r);
           if (idx === -1) return;
           allResults[idx] = data;
           renderResults();
@@ -682,7 +706,9 @@
   }
 
   function appendRow(r) {
-    resultsList.appendChild(buildRow(r));
+    const row = buildRow(r);
+    if (r.domain === currentPinnedDomain) resultsList.prepend(row);
+    else resultsList.appendChild(row);
     updateSnapshotButton();
   }
 
