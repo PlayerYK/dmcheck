@@ -243,6 +243,13 @@
       }
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
+
+    var q = new URLSearchParams(location.search).get('q');
+    if (q) {
+      input.value = q;
+      if (clearBtn) clearBtn.hidden = false;
+      doSearch();
+    }
   }
 
   function autoResize(el) {
@@ -442,6 +449,7 @@
     if (ledgerTitle) ledgerTitle.textContent = searchKeyword;
     updateStats(0, currentExpected);
     setState('streaming');
+    history.replaceState(null, '', (location.pathname === '/' ? '/' : location.pathname) + '?q=' + encodeURIComponent(searchKeyword));
 
     let url = '/api/search?keyword=' + encodeURIComponent(searchKeyword) + '&stream=true';
     url += '&tlds=' + encodeURIComponent(searchTlds.join(','));
